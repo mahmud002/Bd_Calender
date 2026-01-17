@@ -1,25 +1,33 @@
-import 'package:bd_governmet_calender/screens/home_screen.dart';
+import 'screens/home_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'model/repeated_reminder_model.dart';
+import 'model/task_model.dart';
 import 'model/holiday_model.dart';
+import 'enums/reminder_offset.dart';
+import 'enums/repeat_type.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Firebase Init
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Hive Init
   await Hive.initFlutter();
   Hive.registerAdapter(HolidayModelAdapter());
+  Hive.registerAdapter(TaskModelAdapter());
+  Hive.registerAdapter(RepeatedReminderModelAdapter());
+  Hive.registerAdapter(RepeatTypeAdapter());
+  Hive.registerAdapter(ReminderOffsetAdapter());
+
   await Hive.openBox<HolidayModel>('holidayBox');
   await Hive.openBox("noticeBox");
+  await Hive.openBox<TaskModel>('taskBox');
+  await Hive.openBox<RepeatedReminderModel>('repeatedReminderBox');
 
   // Load saved theme
   final prefs = await SharedPreferences.getInstance();
@@ -43,8 +51,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _themeMode =
-    widget.initialTheme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+    _themeMode = widget.initialTheme == 'dark'
+        ? ThemeMode.dark
+        : ThemeMode.light;
   }
 
   Future<void> toggleTheme() async {

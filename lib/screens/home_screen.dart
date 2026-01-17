@@ -1,4 +1,8 @@
-import 'package:bd_governmet_calender/screens/holiday_list.dart';
+import 'repeated_reminder_list_page.dart';
+
+import 'task_page.dart';
+
+import 'holiday_list.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -12,7 +16,6 @@ import '../services/local_notice_service.dart';
 import '../services/notice_blog_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-
 
 class CalendarScreen extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -38,7 +41,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   bool isLoadingNotices = true;
 
   final double _calendarHeight = 400; // Approx height of your calendar grid
-  final double _monthRowHeight = 60;  // Height of month + weekday rows
+  final double _monthRowHeight = 60; // Height of month + weekday rows
   @override
   void initState() {
     super.initState();
@@ -51,6 +54,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
   void showCustomAboutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -84,20 +88,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 // App Name
                 const Text(
                   "BD Holiday Calendar",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
 
                 // Version
                 const SizedBox(height: 5),
                 Text(
                   "Version 1.0",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
 
                 const SizedBox(height: 15),
@@ -106,9 +104,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 const Text(
                   "Developed by MKJ Soft Lab",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(fontSize: 15),
                 ),
 
                 const SizedBox(height: 20),
@@ -123,8 +119,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text("Close", style: TextStyle(color:Colors.red)),
-
+                    child: const Text(
+                      "Close",
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ),
               ],
@@ -144,8 +142,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     // 2) Load from Firestore
     final synced = await firestoreService.getHolidays();
-
-
 
     // 4) Update UI
     holidays = synced;
@@ -187,17 +183,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   bool isHoliday(DateTime date) {
     return holidays.any(
-          (h) =>
-      h.date.day == date.day &&
+      (h) =>
+          h.date.day == date.day &&
           h.date.month == date.month &&
           h.date.year == date.year,
     );
   }
-  Future<void> showYearMonthPicker(
-      BuildContext context,
-      Function(int year, int month) onSelected,
-      ) async {
 
+  Future<void> showYearMonthPicker(
+    BuildContext context,
+    Function(int year, int month) onSelected,
+  ) async {
     // STEP 1 → PICK YEAR
     final int? selectedYear = await showDialog<int>(
       context: context,
@@ -223,15 +219,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     if (selectedYear == null) return; // user cancelled
 
-
-
     // STEP 2 → PICK MONTH
     final int? selectedMonth = await showDialog<int>(
       context: context,
       builder: (context) {
         final months = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
         ];
 
         return AlertDialog(
@@ -267,16 +271,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     if (selectedMonth == null) return; // user cancelled
 
-
-
     // 🔥 Final selected year & month
     onSelected(selectedYear, selectedMonth);
   }
 
   HolidayModel? getHoliday(DateTime date) {
     return holidays.firstWhere(
-          (h) =>
-      h.date.day == date.day &&
+      (h) =>
+          h.date.day == date.day &&
           h.date.month == date.month &&
           h.date.year == date.year,
       orElse: () => HolidayModel(
@@ -289,6 +291,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
+
   void _onHorizontalSwipe(DragEndDetails details) {
     final velocity = details.primaryVelocity;
     if (velocity == null) return;
@@ -306,8 +309,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
-    final daysInMonth =
-        DateTime(selectedDate.year, selectedDate.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      selectedDate.year,
+      selectedDate.month + 1,
+      0,
+    ).day;
 
     return Scaffold(
       drawer: Drawer(
@@ -315,15 +321,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.green,
-              ),
+              decoration: BoxDecoration(color: Colors.green),
               child: Text(
                 'BD Calendar',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             ListTile(
@@ -336,9 +337,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 // Scroll to notifications
                 _scrollController.animateTo(
-                  _monthRowHeight - _calendarHeight*2, // adjust this according to your layout
+                  _monthRowHeight -
+                      _calendarHeight *
+                          2, // adjust this according to your layout
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeInOut,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.task),
+              title: const Text('Task Manager'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => TaskPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.alarm),
+              title: const Text('Repeated Reminded'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RepeatedReminderListPage()),
                 );
               },
             ),
@@ -362,13 +387,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 // Scroll to notifications
                 _scrollController.animateTo(
-                  _monthRowHeight + _calendarHeight, // adjust this according to your layout
+                  _monthRowHeight +
+                      _calendarHeight, // adjust this according to your layout
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeInOut,
                 );
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.brightness_6),
               title: const Text('Toggle Dark/Light'),
@@ -427,25 +452,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ),
             ),
-        
-        
+
             // ------------------ Month navigation --------------
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                        icon: const Icon(Icons.arrow_left),
-                        onPressed: _previousMonth),
+                      icon: const Icon(Icons.arrow_left),
+                      onPressed: _previousMonth,
+                    ),
                     GestureDetector(
                       onTap: () {
                         showYearMonthPicker(context, (year, month) {
                           setState(() {
                             selectedDate = DateTime(year, month, 1);
                           });
-        
                         });
                       },
                       child: Text(
@@ -456,34 +483,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ),
                       ),
                     ),
-        
-        
+
                     IconButton(
-                        icon: const Icon(Icons.arrow_right),
-                        onPressed: _nextMonth),
+                      icon: const Icon(Icons.arrow_right),
+                      onPressed: _nextMonth,
+                    ),
                   ],
                 ),
               ),
             ),
-        
+
             // ------------------ Weekdays ---------------------
             SliverToBoxAdapter(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                    .map((e) => Expanded(
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Text(
-                      e,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ))
+                    .map(
+                      (e) => Expanded(
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            e,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    )
                     .toList(),
               ),
             ),
-        
+
             // ------------------ Calendar Loading --------------
             if (isLoadingHolidays)
               const SliverToBoxAdapter(
@@ -493,92 +522,84 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               )
             else
-            // ------------------ Calendar Grid -----------------
+              // ------------------ Calendar Grid -----------------
               SliverPadding(
                 padding: const EdgeInsets.all(8),
                 sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      if (index < firstDayOfMonth.weekday % 7)
-                        return const SizedBox();
-        
-                      final day =
-                          index - (firstDayOfMonth.weekday % 7) + 1;
-                      final date = DateTime(
-                          selectedDate.year, selectedDate.month, day);
-        
-                      final holiday = isHoliday(date);
-        
-                      final today =
-                          date.day == DateTime.now().day &&
-                              date.month == DateTime.now().month &&
-                              date.year == DateTime.now().year;
-        
-                      Color cellColor = holiday
-                          ? (Theme.of(context).brightness == Brightness.dark
-                          ? Color(0xFF8B0000)
-                          : Color(0xFFDE3163))
-                          : (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey.shade500
-                          : Colors.grey.shade200);
-        
-        
-                      return GestureDetector(
-                        onTap: holiday
-                            ? () {
-                          final h = getHoliday(date);
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text("Holiday"),
-                              content: Text(h!.titleEn),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context),
-                                  child: const Text("OK"),
-                                )
-                              ],
-                            ),
-                          );
-                        }
-                            : null,
-                        child: Container(
-                          margin: const EdgeInsets.all(4),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
-                            color: cellColor,
-                            border: today
-                                ? Border.all(
-                                color: Colors.green, width: 5)
-                                : null,
-                          ),
-                          child: Text(
-                            '$day',
-                            style: TextStyle(
-                              color: holiday
-                                  ? Colors.white
-                                  : Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index < firstDayOfMonth.weekday % 7)
+                      return const SizedBox();
+
+                    final day = index - (firstDayOfMonth.weekday % 7) + 1;
+                    final date = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      day,
+                    );
+
+                    final holiday = isHoliday(date);
+
+                    final today =
+                        date.day == DateTime.now().day &&
+                        date.month == DateTime.now().month &&
+                        date.year == DateTime.now().year;
+
+                    Color cellColor = holiday
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? Color(0xFF8B0000)
+                              : Color(0xFFDE3163))
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade200);
+
+                    return GestureDetector(
+                      onTap: holiday
+                          ? () {
+                              final h = getHoliday(date);
+                              showDialog(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text("Holiday"),
+                                  content: Text(h!.titleEn),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("OK"),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          : null,
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(100),
+                          color: cellColor,
+                          border: today
+                              ? Border.all(color: Colors.green, width: 5)
+                              : null,
+                        ),
+                        child: Text(
+                          '$day',
+                          style: TextStyle(
+                            color: holiday ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
                         ),
-                      );
-                    },
-                    childCount:
-                    daysInMonth + firstDayOfMonth.weekday % 7,
-                  ),
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                      ),
+                    );
+                  }, childCount: daysInMonth + firstDayOfMonth.weekday % 7),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
                     mainAxisSpacing: 4,
                     crossAxisSpacing: 4,
                   ),
                 ),
               ),
-        
+
             // ------------------ Notifications -----------------
             if (isLoadingNotices)
               const SliverToBoxAdapter(
@@ -589,41 +610,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
               )
             else
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    final n = notices[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        leading: const Icon(Icons.notifications,
-                            color: Colors.green),
-                        title: Text(
-                          n.title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          "${n.message}\nUpdated: ${DateFormat.yMMMd().format(n.lastUpdate)}",
-                        ),
-                        onTap: () async {
-                          Uri url = Uri.parse(n.url);
-                          await launchUrl(
-                            url,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        },
-        
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final n = notices[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.notifications,
+                        color: Colors.green,
                       ),
-                    );
-                  },
-                  childCount: notices.length,
-                ),
+                      title: Text(
+                        n.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        "${n.message}\nUpdated: ${DateFormat.yMMMd().format(n.lastUpdate)}",
+                      ),
+                      onTap: () async {
+                        Uri url = Uri.parse(n.url);
+                        await launchUrl(
+                          url,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                    ),
+                  );
+                }, childCount: notices.length),
               ),
-        
+
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
           ],
         ),

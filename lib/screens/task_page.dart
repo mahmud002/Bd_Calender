@@ -5,6 +5,31 @@ import 'task_form_page.dart';
 
 class TaskPage extends StatelessWidget {
   const TaskPage({super.key});
+  String _formatTaskDateTime(
+    DateTime date,
+    DateTime time,
+    BuildContext context,
+  ) {
+    // Combine date + time
+    final combined = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    // Format date
+    final formattedDate =
+        '${combined.day.toString().padLeft(2, '0')}-'
+        '${combined.month.toString().padLeft(2, '0')}-'
+        '${combined.year}';
+
+    // Format time
+    final formattedTime = TimeOfDay.fromDateTime(combined).format(context);
+
+    return '$formattedDate • $formattedTime';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,11 +77,85 @@ class TaskPage extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${task.date.toLocal().toString().split(' ')[0]}',
+                    _formatTaskDateTime(task.date, task.time, context),
                   ),
+
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => task.delete(),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            24,
+                            20,
+                            24,
+                            10,
+                          ),
+
+                          title: Column(
+                            children: const [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 46,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'Delete Task?',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+
+                          content: const Text(
+                            'This task will be permanently deleted.\nYou cannot recover it later.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(height: 1.4),
+                          ),
+
+                          actionsPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+
+                          actions: [
+                            // Cancel Button
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+
+                            // Delete Button
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        task.delete();
+                      }
+                    },
                   ),
                   onTap: () {
                     Navigator.push(

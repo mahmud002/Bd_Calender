@@ -11,6 +11,11 @@ class RepeatedReminderListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final box = Hive.box<RepeatedReminderModel>('repeatedReminderBox');
+    String _formatDate(DateTime date) {
+      return '${date.day.toString().padLeft(2, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.year}';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -49,6 +54,7 @@ class RepeatedReminderListPage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${reminder.repeatType.name} • '
+                        '${_formatDate(reminder.startDate)} • '
                         '${TimeOfDay.fromDateTime(reminder.time).format(context)}',
                       ),
                     ],
@@ -79,21 +85,67 @@ class RepeatedReminderListPage extends StatelessWidget {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: const Text('Delete Reminder'),
-                        content: const Text(
-                          'Are you sure you want to delete this reminder?',
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          24,
+                          20,
+                          24,
+                          10,
+                        ),
+
+                        title: Column(
+                          children: const [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.redAccent,
+                              size: 48,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Delete Reminder?',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+
+                        content: const Text(
+                          'This reminder will be permanently removed.\nYou cannot undo this action.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(height: 1.4),
+                        ),
+
+                        actionsPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+
                         actions: [
-                          TextButton(
+                          // Cancel Button
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             onPressed: () => Navigator.pop(context, false),
                             child: const Text('Cancel'),
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.red),
+
+                          // Delete Button
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
                             ),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Delete'),
                           ),
                         ],
                       ),

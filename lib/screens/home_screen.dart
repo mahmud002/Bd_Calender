@@ -141,7 +141,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 // App Name
                 const Text(
-                  "BD Holiday Calendar",
+                  "BD Calendar",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
 

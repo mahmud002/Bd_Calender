@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 
 import '../model/task_model.dart';
 import 'repeated_reminder_list_page.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'task_page.dart';
 
@@ -53,7 +54,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     loadHolidays();
     loadNotices();
     // Open Hive box for tasks
-    taskBox = Hive.box<TaskModel>('taskBox'); // Make sure you already opened this box in main()
+    taskBox = Hive.box<TaskModel>(
+      'taskBox',
+    ); // Make sure you already opened this box in main()
   }
 
   @override
@@ -61,25 +64,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  Map<String, dynamic> getTodayTaskStats() {
+
+  Map<String, dynamic> getTodayTaskStatsFromList(List<TaskModel> tasks) {
     DateTime today = DateTime.now();
-    final tasks = taskBox.values.toList();
 
-    int completed = tasks.where((t) => t.isCompleted && isSameDay(t.date, today)).length;
-    int missed = tasks.where((t) => !t.isCompleted && t.date.isBefore(today)).length;
-    int remaining = tasks.where((t) => !t.isCompleted && isSameDay(t.date, today)).length;
+    int completed = tasks
+        .where((t) => t.isCompleted && isSameDay(t.date, today))
+        .length;
 
-    // Upcoming task with <=5 days remaining
+    int missed = tasks
+        .where((t) => !t.isCompleted && t.date.isBefore(today))
+        .length;
+
+    int remaining = tasks
+        .where((t) => !t.isCompleted && isSameDay(t.date, today))
+        .length;
+
     List<TaskModel> upcoming = tasks.where((t) {
       if (t.isCompleted) return false;
+
       int daysLeft = t.date.difference(today).inDays;
+
       return daysLeft >= 0 && daysLeft <= 5;
     }).toList();
 
     upcoming.sort((a, b) => a.date.compareTo(b.date));
 
     TaskModel? nextTask = upcoming.isNotEmpty ? upcoming.first : null;
-    int? daysLeft = nextTask != null ? nextTask.date.difference(today).inDays : null;
+
+    int? daysLeft = nextTask != null
+        ? nextTask.date.difference(today).inDays
+        : null;
 
     return {
       "completed": completed,
@@ -638,48 +653,65 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 ),
               ),
+            // ------------------ Today's Tasks (Auto Refresh) -----------------
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Builder(builder: (context) {
-                  final stats = getTodayTaskStats();
-                  final nextTask = stats['nextTask'] as TaskModel?;
-                  final daysLeft = stats['daysLeft'] as int?;
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: ValueListenableBuilder(
+                  valueListenable: Hive.box<TaskModel>('taskBox').listenable(),
+                  builder: (context, Box<TaskModel> box, _) {
+                    final tasks = box.values.toList();
 
-                  return Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Today's Tasks",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text("✅ Completed: ${stats['completed']}"),
-                          Text("⏳ Remaining: ${stats['remaining']}"),
-                          Text("❌ Missed: ${stats['missed']}"),
-                          if (nextTask != null && daysLeft != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              "⚠️ $daysLeft days remaining to do:",
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              "👉 ${nextTask.title}",
-                              style: const TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                          ],
-                        ],
+                    final stats = getTodayTaskStatsFromList(tasks);
+
+                    final nextTask = stats['nextTask'] as TaskModel?;
+                    final daysLeft = stats['daysLeft'] as int?;
+
+                    return Card(
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                  );
-                }),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Today's Tasks",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text("✅ Completed: ${stats['completed']}"),
+                            Text("⏳ Remaining: ${stats['remaining']}"),
+                            Text("❌ Missed: ${stats['missed']}"),
+                            if (nextTask != null && daysLeft != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                "⚠️ $daysLeft days remaining to do:",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "👉 ${nextTask.title}",
+                                style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 

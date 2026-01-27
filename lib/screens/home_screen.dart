@@ -22,7 +22,6 @@ import '../services/notice_blog_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
-
 class CalendarScreen extends StatefulWidget {
   final VoidCallback toggleTheme;
   const CalendarScreen({super.key, required this.toggleTheme});
@@ -51,7 +50,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final double _monthRowHeight = 60; // Height of month + weekday rows
   late Box<TaskModel> taskBox;
 
-
   @override
   void initState() {
     super.initState();
@@ -63,14 +61,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     ); // Make sure you already opened this box in main()
 
     // Start auto-refresh every minute
-    _minuteTimer = Timer.periodic(
-      const Duration(minutes: 1),
-          (timer) {
-        if (mounted) {
-          setState(() {}); // rebuild only the widgets that depend on time
-        }
-      },
-    );
+    _minuteTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        setState(() {}); // rebuild only the widgets that depend on time
+      }
+    });
   }
 
   @override
@@ -79,6 +74,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _minuteTimer?.cancel();
     super.dispose();
   }
+
   Map<String, dynamic> getTodayTaskStatsFromList(List<TaskModel> tasks) {
     DateTime now = DateTime.now();
     DateTime today = DateTime(now.year, now.month, now.day);
@@ -134,6 +130,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       "upcoming": upcoming,
     };
   }
+
   List<TaskModel> getTodayUpcomingTasks(List<TaskModel> tasks) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -142,11 +139,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (t.isCompleted) return false;
 
       // Normalize task date
-      final taskDay = DateTime(
-        t.date.year,
-        t.date.month,
-        t.date.day,
-      );
+      final taskDay = DateTime(t.date.year, t.date.month, t.date.day);
 
       if (!isSameDay(taskDay, today)) return false;
 
@@ -161,27 +154,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       // Allow now or future
       return !taskDateTime.isBefore(now);
+    }).toList()..sort((a, b) {
+      final aTime = DateTime(
+        a.date.year,
+        a.date.month,
+        a.date.day,
+        a.time.hour,
+        a.time.minute,
+      );
 
-    }).toList()
-      ..sort((a, b) {
-        final aTime = DateTime(
-          a.date.year,
-          a.date.month,
-          a.date.day,
-          a.time.hour,
-          a.time.minute,
-        );
+      final bTime = DateTime(
+        b.date.year,
+        b.date.month,
+        b.date.day,
+        b.time.hour,
+        b.time.minute,
+      );
 
-        final bTime = DateTime(
-          b.date.year,
-          b.date.month,
-          b.date.day,
-          b.time.hour,
-          b.time.minute,
-        );
-
-        return aTime.compareTo(bTime);
-      });
+      return aTime.compareTo(bTime);
+    });
   }
 
   String formatTaskTime(TaskModel task) {
@@ -197,7 +188,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     // Format as 12-hour with leading zeros
     return DateFormat('hh:mm a').format(taskDateTime); // e.g., 12:05 AM
   }
-
 
   String getTimeLeft(TaskModel task) {
     final now = DateTime.now();
@@ -223,22 +213,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return "${diff.inHours}h ${diff.inMinutes % 60}m left";
   }
 
-  String _formatTaskDateTime(
-      DateTime time,
-      BuildContext context,
-      ) {
+  String _formatTaskDateTime(DateTime time, BuildContext context) {
     // Combine date + time
-    final combined = DateTime(
-      time.hour,
-      time.minute,
-    );
-
+    final combined = DateTime(time.hour, time.minute);
 
     // Format time
     final formattedTime = TimeOfDay.fromDateTime(combined).format(context);
 
     return '$formattedTime';
   }
+
   bool isSameDay(DateTime d1, DateTime d2) {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
@@ -797,7 +781,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: ValueListenableBuilder(
                   valueListenable: Hive.box<TaskModel>('taskBox').listenable(),
                   builder: (context, Box<TaskModel> box, _) {
-
                     final tasks = box.values.toList().cast<TaskModel>();
 
                     // ✅ ADD THIS
@@ -815,14 +798,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
                             // Header
                             Text(
                               "Today's Tasks",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -830,9 +811,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             // Stats row
                             Row(
                               children: [
-                                Text("✅ Completed: ${stats['completed']}", style: TextStyle(fontSize: 14)),
+                                Text(
+                                  "✅ Completed: ${stats['completed']}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                  ),
+                                ),
                                 const SizedBox(width: 16),
-                                Text("⏳ Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14)),
+                                Text(
+                                  "⏳ Remaining: ${stats['remaining']}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                  ),
+                                ),
                               ],
                             ),
 
@@ -850,40 +843,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      // Header
-                                      Row(
-                                        children: const [
-                                          Icon(Icons.warning_amber_rounded, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            "⚠️ Due Today",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 12),
-
                                       // Task list
                                       ...todayUpcoming.map((task) {
                                         final timeLeft = getTimeLeft(task);
-                                        final taskTimeStr = formatTaskTime(task);
+                                        final taskTimeStr = formatTaskTime(
+                                          task,
+                                        );
 
                                         return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 6,
+                                          ),
                                           child: InkWell(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             onTap: () {
                                               // ✅ Single tap → Navigate to TaskPage
                                               Navigator.push(
                                                 context,
-                                                MaterialPageRoute(builder: (_) => TaskPage()),
+                                                MaterialPageRoute(
+                                                  builder: (_) => TaskPage(),
+                                                ),
                                               );
                                             },
                                             onLongPress: () {
@@ -893,12 +877,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                 builder: (_) => AlertDialog(
                                                   title: Text(task.title),
                                                   content: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      Text("Time: $taskTimeStr"),
-                                                      Text("Note: ${task.note ?? "No note"}"),
-                                                      Text("Remaining: $timeLeft"),
+                                                      Text(
+                                                        "Time: $taskTimeStr",
+                                                      ),
+                                                      Text(
+                                                        "Note: ${task.note ?? "No note"}",
+                                                      ),
+                                                      Text(
+                                                        "Remaining: $timeLeft",
+                                                      ),
                                                     ],
                                                   ),
                                                   actions: [
@@ -906,7 +899,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                       onPressed: () {
                                                         Navigator.pop(context);
                                                       },
-                                                      child: const Text("Close"),
+                                                      child: const Text(
+                                                        "Close",
+                                                      ),
                                                     ),
                                                     TextButton(
                                                       onPressed: () {
@@ -914,43 +909,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                         task.save();
                                                         Navigator.pop(context);
                                                       },
-                                                      child: const Text("Mark Completed"),
+                                                      child: const Text(
+                                                        "Mark Completed",
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
                                               );
                                             },
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                    horizontal: 4,
+                                                  ),
                                               decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(8),
-
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               child: Row(
                                                 children: [
-                                                  const Icon(Icons.arrow_right_rounded, size: 20),
+                                                  const Icon(
+                                                    Icons.arrow_right_rounded,
+                                                    size: 20,
+                                                  ),
                                                   const SizedBox(width: 6),
                                                   Container(
                                                     decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
-
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
                                                     ),
                                                     child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
                                                         Text(
                                                           task.title,
-                                                          style: const TextStyle(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 15,
-                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 15,
+                                                              ),
                                                         ),
-                                                        const SizedBox(height: 2),
+                                                        const SizedBox(
+                                                          height: 2,
+                                                        ),
                                                         Text(
                                                           "$taskTimeStr • $timeLeft",
                                                           style: TextStyle(
                                                             fontSize: 13,
-                                                            fontStyle: FontStyle.italic,
+                                                            fontStyle: FontStyle
+                                                                .italic,
                                                           ),
                                                         ),
                                                       ],
@@ -967,14 +981,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 ),
                               ),
                             ],
-
                           ],
                         ),
                       ),
                     );
                   },
                 ),
-
               ),
             ),
 

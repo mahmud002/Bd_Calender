@@ -806,31 +806,168 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     final stats = getTodayTaskStatsFromList(tasks);
 
                     return Card(
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
 
-                            Text("Today's Tasks"),
+                            // Header
+                            Text(
+                              "Today's Tasks",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
 
-                            Text("✅ Completed: ${stats['completed']}"),
-                            Text("⏳ Remaining: ${stats['remaining']}"),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
 
+                            // Stats row
+                            Row(
+                              children: [
+                                Text("✅ Completed: ${stats['completed']}", style: TextStyle(fontSize: 14)),
+                                const SizedBox(width: 16),
+                                Text("⏳ Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14)),
+                              ],
+                            ),
 
-                            // ✅ USE IT HERE
-
+                            // Space before due today
                             if (todayUpcoming.isNotEmpty) ...[
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
 
-                              const Text("⚠️ Due Today"),
+                              // Modern card for Due Today tasks
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
 
-                              ...todayUpcoming.map((task) {
-                                return Text(
-                                    "👉 ${task.title} at ${formatTaskTime(task)} (${getTimeLeft(task)})"
-                                );
-                              }).toList(),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Header
+                                      Row(
+                                        children: const [
+                                          Icon(Icons.warning_amber_rounded, color: Colors.red),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "⚠️ Due Today",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Task list
+                                      ...todayUpcoming.map((task) {
+                                        final timeLeft = getTimeLeft(task);
+                                        final taskTimeStr = formatTaskTime(task);
+
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(8),
+                                            onTap: () {
+                                              // ✅ Single tap → Navigate to TaskPage
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => TaskPage()),
+                                              );
+                                            },
+                                            onLongPress: () {
+                                              // ✅ Long press → Mark complete dialog
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  title: Text(task.title),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text("Time: $taskTimeStr"),
+                                                      Text("Note: ${task.note ?? "No note"}"),
+                                                      Text("Remaining: $timeLeft"),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text("Close"),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        task.isCompleted = true;
+                                                        task.save();
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text("Mark Completed"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Icon(Icons.arrow_right_rounded, size: 20),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(8),
+
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          task.title,
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          "$taskTimeStr • $timeLeft",
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontStyle: FontStyle.italic,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
+
                           ],
                         ),
                       ),

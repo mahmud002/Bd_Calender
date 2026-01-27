@@ -20,6 +20,8 @@ import '../services/local_notice_service.dart';
 import '../services/notice_blog_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
+
 
 class CalendarScreen extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -40,6 +42,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   final noticeLocal = LocalNoticeService();
   final noticeRemote = NoticeService();
+  Timer? _minuteTimer;
 
   bool isLoadingHolidays = true;
   bool isLoadingNotices = true;
@@ -47,6 +50,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final double _calendarHeight = 400; // Approx height of your calendar grid
   final double _monthRowHeight = 60; // Height of month + weekday rows
   late Box<TaskModel> taskBox;
+
 
   @override
   void initState() {
@@ -57,54 +61,184 @@ class _CalendarScreenState extends State<CalendarScreen> {
     taskBox = Hive.box<TaskModel>(
       'taskBox',
     ); // Make sure you already opened this box in main()
+
+    // Start auto-refresh every minute
+    _minuteTimer = Timer.periodic(
+      const Duration(minutes: 1),
+          (timer) {
+        if (mounted) {
+          setState(() {}); // rebuild only the widgets that depend on time
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _minuteTimer?.cancel();
     super.dispose();
   }
-
   Map<String, dynamic> getTodayTaskStatsFromList(List<TaskModel> tasks) {
-    DateTime today = DateTime.now();
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
 
     int completed = tasks
         .where((t) => t.isCompleted && isSameDay(t.date, today))
         .length;
 
-    int missed = tasks
-        .where((t) => !t.isCompleted && t.date.isBefore(today))
-        .length;
+    int missed = tasks.where((t) {
+      if (t.isCompleted) return false;
 
-    int remaining = tasks
-        .where((t) => !t.isCompleted && isSameDay(t.date, today))
-        .length;
+      final taskDateTime = DateTime(
+        t.date.year,
+        t.date.month,
+        t.date.day,
+        t.time.hour,
+        t.time.minute,
+      );
 
+      return taskDateTime.isBefore(now);
+    }).length;
+
+    int remaining = tasks.where((t) {
+      return !t.isCompleted && isSameDay(t.date, today);
+    }).length;
+
+    // ✅ UPCOMING = Today + Not Completed + Time Not Passed
     List<TaskModel> upcoming = tasks.where((t) {
       if (t.isCompleted) return false;
 
-      int daysLeft = t.date.difference(today).inDays;
+      // Must be today
+      if (!isSameDay(t.date, today)) return false;
 
-      return daysLeft >= 0 && daysLeft <= 5;
+      final taskDateTime = DateTime(
+        t.date.year,
+        t.date.month,
+        t.date.day,
+        t.time.hour,
+        t.time.minute,
+      );
+
+      // Must be in future
+      return taskDateTime.isAfter(now);
     }).toList();
 
-    upcoming.sort((a, b) => a.date.compareTo(b.date));
-
-    TaskModel? nextTask = upcoming.isNotEmpty ? upcoming.first : null;
-
-    int? daysLeft = nextTask != null
-        ? nextTask.date.difference(today).inDays
-        : null;
+    // Sort by time (nearest first)
+    upcoming.sort((a, b) => a.time.compareTo(b.time));
 
     return {
       "completed": completed,
       "remaining": remaining,
       "missed": missed,
-      "nextTask": nextTask,
-      "daysLeft": daysLeft,
+      "upcoming": upcoming,
     };
   }
+  List<TaskModel> getTodayUpcomingTasks(List<TaskModel> tasks) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
+    return tasks.where((t) {
+      if (t.isCompleted) return false;
+
+      // Normalize task date
+      final taskDay = DateTime(
+        t.date.year,
+        t.date.month,
+        t.date.day,
+      );
+
+      if (!isSameDay(taskDay, today)) return false;
+
+      // Combine date + time correctly
+      final taskDateTime = DateTime(
+        taskDay.year,
+        taskDay.month,
+        taskDay.day,
+        t.time.hour,
+        t.time.minute,
+      );
+
+      // Allow now or future
+      return !taskDateTime.isBefore(now);
+
+    }).toList()
+      ..sort((a, b) {
+        final aTime = DateTime(
+          a.date.year,
+          a.date.month,
+          a.date.day,
+          a.time.hour,
+          a.time.minute,
+        );
+
+        final bTime = DateTime(
+          b.date.year,
+          b.date.month,
+          b.date.day,
+          b.time.hour,
+          b.time.minute,
+        );
+
+        return aTime.compareTo(bTime);
+      });
+  }
+
+  String formatTaskTime(TaskModel task) {
+    // Combine task date + time to make sure it's correct
+    final taskDateTime = DateTime(
+      task.date.year,
+      task.date.month,
+      task.date.day,
+      task.time.hour,
+      task.time.minute,
+    );
+
+    // Format as 12-hour with leading zeros
+    return DateFormat('hh:mm a').format(taskDateTime); // e.g., 12:05 AM
+  }
+
+
+  String getTimeLeft(TaskModel task) {
+    final now = DateTime.now();
+
+    final dueDateTime = DateTime(
+      task.date.year,
+      task.date.month,
+      task.date.day,
+      task.time.hour,
+      task.time.minute,
+    );
+
+    final diff = dueDateTime.difference(now);
+
+    if (diff.isNegative) return "Missed";
+
+    if (diff.inMinutes < 1) return "Now";
+
+    if (diff.inHours < 1) {
+      return "${diff.inMinutes}m left";
+    }
+
+    return "${diff.inHours}h ${diff.inMinutes % 60}m left";
+  }
+
+  String _formatTaskDateTime(
+      DateTime time,
+      BuildContext context,
+      ) {
+    // Combine date + time
+    final combined = DateTime(
+      time.hour,
+      time.minute,
+    );
+
+
+    // Format time
+    final formattedTime = TimeOfDay.fromDateTime(combined).format(context);
+
+    return '$formattedTime';
+  }
   bool isSameDay(DateTime d1, DateTime d2) {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
@@ -663,12 +797,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: ValueListenableBuilder(
                   valueListenable: Hive.box<TaskModel>('taskBox').listenable(),
                   builder: (context, Box<TaskModel> box, _) {
-                    final tasks = box.values.toList();
+
+                    final tasks = box.values.toList().cast<TaskModel>();
+
+                    // ✅ ADD THIS
+                    final todayUpcoming = getTodayUpcomingTasks(tasks);
 
                     final stats = getTodayTaskStatsFromList(tasks);
-
-                    final nextTask = stats['nextTask'] as TaskModel?;
-                    final daysLeft = stats['daysLeft'] as int?;
 
                     return Card(
                       elevation: 3,
@@ -680,38 +815,166 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+
+                            // Header
+                            Text(
                               "Today's Tasks",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text("✅ Completed: ${stats['completed']}"),
-                            Text("⏳ Remaining: ${stats['remaining']}"),
-                            Text("❌ Missed: ${stats['missed']}"),
-                            if (nextTask != null && daysLeft != null) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                "⚠️ $daysLeft days remaining to do:",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+
+                            // Stats row
+                            Row(
+                              children: [
+                                Text("✅ Completed: ${stats['completed']}", style: TextStyle(fontSize: 14)),
+                                const SizedBox(width: 16),
+                                Text("⏳ Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14)),
+                              ],
+                            ),
+
+                            // Space before due today
+                            if (todayUpcoming.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+
+                              // Modern card for Due Today tasks
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ),
-                              Text(
-                                "👉 ${nextTask.title}",
-                                style: const TextStyle(
-                                  fontStyle: FontStyle.italic,
+
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Header
+                                      Row(
+                                        children: const [
+                                          Icon(Icons.warning_amber_rounded, color: Colors.red),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "⚠️ Due Today",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Task list
+                                      ...todayUpcoming.map((task) {
+                                        final timeLeft = getTimeLeft(task);
+                                        final taskTimeStr = formatTaskTime(task);
+
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(8),
+                                            onTap: () {
+                                              // ✅ Single tap → Navigate to TaskPage
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => TaskPage()),
+                                              );
+                                            },
+                                            onLongPress: () {
+                                              // ✅ Long press → Mark complete dialog
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  title: Text(task.title),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text("Time: $taskTimeStr"),
+                                                      Text("Note: ${task.note ?? "No note"}"),
+                                                      Text("Remaining: $timeLeft"),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text("Close"),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        task.isCompleted = true;
+                                                        task.save();
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text("Mark Completed"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Icon(Icons.arrow_right_rounded, size: 20),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(8),
+
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          task.title,
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          "$taskTimeStr • $timeLeft",
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontStyle: FontStyle.italic,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
+
                           ],
                         ),
                       ),
                     );
                   },
                 ),
+
               ),
             ),
 

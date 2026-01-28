@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
 import '../model/task_model.dart';
 import 'task_form_page.dart';
 
 class TaskPage extends StatelessWidget {
   const TaskPage({super.key});
+
+  // Format Date + Time
   String _formatTaskDateTime(
     DateTime date,
     DateTime time,
     BuildContext context,
   ) {
-    // Combine date + time
     final combined = DateTime(
       date.year,
       date.month,
@@ -19,16 +21,84 @@ class TaskPage extends StatelessWidget {
       time.minute,
     );
 
-    // Format date
     final formattedDate =
         '${combined.day.toString().padLeft(2, '0')}-'
         '${combined.month.toString().padLeft(2, '0')}-'
         '${combined.year}';
 
-    // Format time
     final formattedTime = TimeOfDay.fromDateTime(combined).format(context);
 
     return '$formattedDate • $formattedTime';
+  }
+
+  // Check if same day
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  // Build Task Tile
+  Widget _buildTaskTile(BuildContext context, TaskModel task) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+
+      child: ListTile(
+        leading: Checkbox(
+          value: task.isCompleted,
+          onChanged: (value) {
+            task.isCompleted = value!;
+            task.save();
+          },
+        ),
+
+        title: Text(
+          task.title,
+          style: TextStyle(
+            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+          ),
+        ),
+
+        subtitle: Text(_formatTaskDateTime(task.date, task.time, context)),
+
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+
+          onPressed: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+
+              builder: (_) => AlertDialog(
+                title: const Text('Delete Task?'),
+
+                content: const Text('Are you sure?'),
+
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              task.delete();
+            }
+          },
+        ),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TaskFormPage(task: task)),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -37,139 +107,133 @@ class TaskPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tasks'), centerTitle: true),
+
       floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const TaskFormPage()),
           );
         },
-        child: const Icon(Icons.add),
       ),
+
       body: ValueListenableBuilder(
         valueListenable: taskBox.listenable(),
+
         builder: (context, Box<TaskModel> box, _) {
           if (box.values.isEmpty) {
             return const Center(child: Text('No tasks yet'));
           }
 
-          return ListView.builder(
-            itemCount: box.length,
-            itemBuilder: (context, index) {
-              final task = box.getAt(index)!;
+          final now = DateTime.now();
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: ListTile(
-                  leading: Checkbox(
-                    value: task.isCompleted,
-                    onChanged: (value) {
-                      task.isCompleted = value!;
-                      task.save();
-                    },
-                  ),
-                  title: Text(
-                    task.title,
-                    style: TextStyle(
-                      decoration: task.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
+          final today = DateTime(now.year, now.month, now.day);
+
+          final tomorrow = today.add(const Duration(days: 1));
+
+          // Convert to List
+          final tasks = box.values.toList();
+
+          // Sort
+          tasks.sort((a, b) {
+            final aDT = DateTime(
+              a.date.year,
+              a.date.month,
+              a.date.day,
+              a.time.hour,
+              a.time.minute,
+            );
+
+            final bDT = DateTime(
+              b.date.year,
+              b.date.month,
+              b.date.day,
+              b.time.hour,
+              b.time.minute,
+            );
+
+            return aDT.compareTo(bDT);
+          });
+
+          // Groups
+          List<TaskModel> todayTasks = [];
+          List<TaskModel> tomorrowTasks = [];
+          Map<String, List<TaskModel>> otherTasks = {};
+
+          for (var task in tasks) {
+            final taskDate = DateTime(
+              task.date.year,
+              task.date.month,
+              task.date.day,
+            );
+
+            if (_isSameDay(taskDate, today)) {
+              todayTasks.add(task);
+            } else if (_isSameDay(taskDate, tomorrow)) {
+              tomorrowTasks.add(task);
+            } else {
+              final key = '${taskDate.year}-${taskDate.month}-${taskDate.day}';
+
+              otherTasks.putIfAbsent(key, () => []);
+              otherTasks[key]!.add(task);
+            }
+          }
+
+          return ListView(
+            children: [
+              // ===== TODAY =====
+              if (todayTasks.isNotEmpty) ...[
+                _buildHeader('📍 Today'),
+                ...todayTasks.map((t) => _buildTaskTile(context, t)),
+              ],
+
+              // ===== TOMORROW =====
+              if (tomorrowTasks.isNotEmpty) ...[
+                _buildHeader('📍 Tomorrow'),
+                ...tomorrowTasks.map((t) => _buildTaskTile(context, t)),
+              ],
+
+              // ===== OTHER DATES =====
+              ...otherTasks.entries.map((entry) {
+                final parts = entry.key.split('-');
+
+                final date = DateTime(
+                  int.parse(parts[0]),
+                  int.parse(parts[1]),
+                  int.parse(parts[2]),
+                );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      '${date.day.toString().padLeft(2, '0')}-'
+                      '${date.month.toString().padLeft(2, '0')}-'
+                      '${date.year}',
                     ),
-                  ),
-                  subtitle: Text(
-                    _formatTaskDateTime(task.date, task.time, context),
-                  ),
 
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          contentPadding: const EdgeInsets.fromLTRB(
-                            24,
-                            20,
-                            24,
-                            10,
-                          ),
-
-                          title: Column(
-                            children: const [
-                              Icon(
-                                Icons.delete_outline_rounded,
-                                color: Colors.redAccent,
-                                size: 46,
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                'Delete Task?',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-
-                          content: const Text(
-                            'This task will be permanently deleted.\nYou cannot recover it later.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(height: 1.4),
-                          ),
-
-                          actionsPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-
-                          actions: [
-                            // Cancel Button
-                            OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
-                            ),
-
-                            // Delete Button
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.redAccent,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                              ),
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true) {
-                        task.delete();
-                      }
-                    },
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TaskFormPage(task: task),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+                    ...entry.value.map((t) => _buildTaskTile(context, t)),
+                  ],
+                );
+              }),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  // Header Widget
+  Widget _buildHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+
+      child: Text(
+        text,
+
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
       ),
     );
   }

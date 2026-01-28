@@ -141,26 +141,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return tasks.where((t) {
       if (t.isCompleted) return false;
 
-      // Normalize task date
       final taskDay = DateTime(
         t.date.year,
         t.date.month,
         t.date.day,
       );
 
-      if (!isSameDay(taskDay, today)) return false;
-
-      // Combine date + time correctly
-      final taskDateTime = DateTime(
-        taskDay.year,
-        taskDay.month,
-        taskDay.day,
-        t.time.hour,
-        t.time.minute,
-      );
-
-      // Allow now or future
-      return !taskDateTime.isBefore(now);
+      // Only check same day
+      return isSameDay(taskDay, today);
 
     }).toList()
       ..sort((a, b) {
@@ -183,6 +171,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return aTime.compareTo(bTime);
       });
   }
+
 
   String formatTaskTime(TaskModel task) {
     // Combine task date + time to make sure it's correct
@@ -544,17 +533,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.alarm),
-              title: const Text('Repeated Reminded'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => RepeatedReminderListPage()),
-                );
-              },
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.alarm),
+            //   title: const Text('Repeated Reminded'),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(builder: (_) => RepeatedReminderListPage()),
+            //     );
+            //   },
+            // ),
             ListTile(
               leading: const Icon(Icons.event),
               title: const Text('All Holidays'),
@@ -802,7 +791,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                     // ✅ ADD THIS
                     final todayUpcoming = getTodayUpcomingTasks(tasks);
-
                     final stats = getTodayTaskStatsFromList(tasks);
 
                     return Card(
@@ -822,7 +810,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -830,9 +817,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             // Stats row
                             Row(
                               children: [
-                                Text("✅ Completed: ${stats['completed']}", style: TextStyle(fontSize: 14)),
+                                Text(" Completed: ${stats['completed']}", style: TextStyle(fontSize: 14, color: Colors.green)),
                                 const SizedBox(width: 16),
-                                Text("⏳ Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14)),
+                                Text(" Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14, color: Colors.deepOrange)),
                               ],
                             ),
 
@@ -912,7 +899,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                               ),
                                               child: Row(
                                                 children: [
-                                                  const Icon(Icons.arrow_right_rounded, size: 20, color: Colors.black54),
+                                                  const Icon(Icons.arrow_right_rounded, size: 20),
                                                   const SizedBox(width: 6),
                                                   Expanded(
                                                     child: Column(
@@ -930,7 +917,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                           "$taskTimeStr • $timeLeft",
                                                           style: TextStyle(
                                                             fontSize: 13,
-                                                            color: isUrgent ? Colors.red : Colors.black54,
+                                                            color: isUrgent
+                                                                ? Colors.red
+                                                                : Theme.of(context).textTheme.bodySmall?.color,
+
                                                             fontStyle: FontStyle.italic,
                                                           ),
                                                         ),
@@ -960,51 +950,100 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
 
-            // ------------------ Notifications -----------------
-            if (isLoadingNotices)
-              const SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 150,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final n = notices[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.notifications,
-                        color: Colors.green,
-                      ),
-                      title: Text(
-                        n.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        "${n.message}\nUpdated: ${DateFormat.yMMMd().format(n.lastUpdate)}",
-                      ),
-                      onTap: () async {
-                        Uri url = Uri.parse(n.url);
-                        await launchUrl(
-                          url,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      },
-                    ),
-                  );
-                }, childCount: notices.length),
-              ),
+// ------------------ Notifications -----------------
+            SliverToBoxAdapter(
+              key: const ValueKey("notifications_section"),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
 
+                        // Header
+                        const Text(
+                          "Notifications",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Body (Loading / Empty / Data)
+                        if (isLoadingNotices)
+
+                        // Loading
+                          const SizedBox(
+                            height: 120,
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+
+                        else if (notices.isEmpty)
+
+                        // Empty State
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Text(
+                                "No notifications available",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+
+                        else
+
+                        // Notification List
+                          ...notices.map((n) {
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.notifications,
+                                  color: Colors.green,
+                                ),
+                                title: Text(
+                                  n.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  "${n.message}\nUpdated: ${DateFormat.yMMMd().format(n.lastUpdate)}",
+                                ),
+                                isThreeLine: true,
+                                onTap: () async {
+                                  final url = Uri.parse(n.url);
+
+                                  await launchUrl(
+                                    url,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                },
+                              ),
+                            );
+                          }).toList(),
+
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
           ],
         ),

@@ -36,6 +36,23 @@ class TaskPage extends StatelessWidget {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  //check is missed
+  bool _isMissed(TaskModel task) {
+    if (task.isCompleted) return false;
+
+    final now = DateTime.now();
+
+    final taskDateTime = DateTime(
+      task.date.year,
+      task.date.month,
+      task.date.day,
+      task.time.hour,
+      task.time.minute,
+    );
+
+    return taskDateTime.isBefore(now);
+  }
+
   // Build Task Tile
   Widget _buildTaskTile(BuildContext context, TaskModel task) {
     return Card(
@@ -90,6 +107,67 @@ class TaskPage extends StatelessWidget {
             }
           },
         ),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TaskFormPage(task: task)),
+          );
+        },
+      ),
+    );
+  }
+  Widget _buildMissedTaskTile(BuildContext context, TaskModel task) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+
+      child: ListTile(
+        leading: const Icon(Icons.error_outline, color: Colors.red),
+
+        title: Text(
+          task.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.red,
+          ),
+        ),
+
+        subtitle: Text(
+          _formatTaskDateTime(task.date, task.time, context),
+          style: const TextStyle(color: Colors.redAccent),
+        ),
+
+          trailing: IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+
+                builder: (_) => AlertDialog(
+                  title: const Text('Delete Task?'),
+
+                  content: const Text('Are you sure?'),
+
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                task.delete();
+              }
+            },
+          ),
 
         onTap: () {
           Navigator.push(
@@ -158,9 +236,11 @@ class TaskPage extends StatelessWidget {
           });
 
           // Groups
+          List<TaskModel> missedTasks = [];
           List<TaskModel> todayTasks = [];
           List<TaskModel> tomorrowTasks = [];
           Map<String, List<TaskModel>> otherTasks = {};
+
 
           for (var task in tasks) {
             final taskDate = DateTime(
@@ -169,11 +249,23 @@ class TaskPage extends StatelessWidget {
               task.date.day,
             );
 
-            if (_isSameDay(taskDate, today)) {
+            // 🔴 Missed
+            if (_isMissed(task)) {
+              missedTasks.add(task);
+            }
+
+            // 📍 Today
+            else if (_isSameDay(taskDate, today)) {
               todayTasks.add(task);
-            } else if (_isSameDay(taskDate, tomorrow)) {
+            }
+
+            // 📍 Tomorrow
+            else if (_isSameDay(taskDate, tomorrow)) {
               tomorrowTasks.add(task);
-            } else {
+            }
+
+            // 📅 Others
+            else {
               final key = '${taskDate.year}-${taskDate.month}-${taskDate.day}';
 
               otherTasks.putIfAbsent(key, () => []);
@@ -181,8 +273,15 @@ class TaskPage extends StatelessWidget {
             }
           }
 
+
           return ListView(
             children: [
+              // ===== MISSED =====
+              if (missedTasks.isNotEmpty) ...[
+                _buildHeader('⛔ Missed'),
+                ...missedTasks.map((t) => _buildMissedTaskTile(context, t)),
+              ],
+
               // ===== TODAY =====
               if (todayTasks.isNotEmpty) ...[
                 _buildHeader('📍 Today'),

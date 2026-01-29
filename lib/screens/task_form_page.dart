@@ -253,7 +253,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
-
+              backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -266,8 +266,9 @@ class _TaskFormPageState extends State<TaskFormPage> {
 
             child: const Text(
               'Save Task',
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
+
           ),
         ),
       ),

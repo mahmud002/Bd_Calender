@@ -102,7 +102,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }).length;
 
     int remaining = tasks.where((t) {
-      return !t.isCompleted && isSameDay(t.date, today);
+      final taskDateTime = DateTime(
+        t.date.year,
+        t.date.month,
+        t.date.day,
+        t.time.hour,
+        t.time.minute,
+      );
+      return !t.isCompleted && isSameDay(t.date, today) && !taskDateTime.isBefore(now);
     }).length;
 
     // ✅ UPCOMING = Today + Not Completed + Time Not Passed
@@ -819,7 +826,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               children: [
                                 Text(" Completed: ${stats['completed']}", style: TextStyle(fontSize: 14, color: Colors.green)),
                                 const SizedBox(width: 16),
-                                Text(" Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14, color: Colors.deepOrange)),
+                                Text(" Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14, color: Colors.blue)),
+                                const SizedBox(width: 16),
+                                Text(" Missed: ${stats['missed']}", style: TextStyle(fontSize: 14, color: Colors.deepOrange)),
                               ],
                             ),
 

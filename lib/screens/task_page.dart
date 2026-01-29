@@ -84,22 +84,68 @@ class TaskPage extends StatelessWidget {
               context: context,
 
               builder: (_) => AlertDialog(
-                title: const Text('Delete Task?'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
 
-                content: const Text('Are you sure?'),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 48,
+                  color: Colors.redAccent,
+                ),
+
+                title: const Text(
+                  'Delete Task?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                content: const Text(
+                  'This task will be permanently removed. Are you sure you want to continue?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14),
+                ),
+
+                actionsAlignment: MainAxisAlignment.spaceBetween,
+
+                actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
 
                 actions: [
-                  TextButton(
+                  // Cancel Button
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(120, 44),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+
                     onPressed: () => Navigator.pop(context, false),
+
                     child: const Text('Cancel'),
                   ),
 
-                  TextButton(
+                  // Delete Button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(120, 44),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+
                     onPressed: () => Navigator.pop(context, true),
+
                     child: const Text('Delete'),
                   ),
                 ],
               ),
+
             );
 
             if (confirm == true) {
@@ -122,7 +168,14 @@ class TaskPage extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
 
       child: ListTile(
-        leading: const Icon(Icons.error_outline, color: Colors.red),
+        leading: Checkbox(
+          value: task.isCompleted,
+          checkColor: Colors.red,
+          onChanged: (value) {
+            task.isCompleted = value!;
+            task.save();
+          },
+        ),
 
         title: Text(
           task.title,

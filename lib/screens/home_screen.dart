@@ -863,30 +863,123 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                               showDialog(
                                                 context: context,
                                                 builder: (_) => AlertDialog(
-                                                  title: Text(task.title),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(20),
+                                                  ),
+
+                                                  icon: const Icon(
+                                                    Icons.task_alt,
+                                                    size: 48,
+                                                    color: Colors.green,
+                                                  ),
+
+                                                  title: Text(
+                                                    task.title,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+
                                                   content: Column(
                                                     mainAxisSize: MainAxisSize.min,
                                                     crossAxisAlignment: CrossAxisAlignment.start,
+
                                                     children: [
-                                                      Text("Time: $taskTimeStr"),
-                                                      Text("Note: ${task.note ?? "No note"}"),
-                                                      Text("Remaining: $timeLeft"),
+                                                      const SizedBox(height: 8),
+
+                                                      // Time
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.access_time, size: 18),
+                                                          const SizedBox(width: 8),
+                                                          Expanded(
+                                                            child: Text(
+                                                              "Time: $taskTimeStr",
+                                                              style: const TextStyle(fontSize: 14),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      const SizedBox(height: 8),
+
+                                                      // Note
+                                                      Row(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          const Icon(Icons.note, size: 18),
+                                                          const SizedBox(width: 8),
+                                                          Expanded(
+                                                            child: Text(
+                                                              "Note: ${task.note?.isNotEmpty == true ? task.note : "No note"}",
+                                                              style: const TextStyle(fontSize: 14),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      const SizedBox(height: 8),
+
+                                                      // Remaining Time
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.timer, size: 18),
+                                                          const SizedBox(width: 8),
+                                                          Expanded(
+                                                            child: Text(
+                                                              "Remaining: $timeLeft",
+                                                              style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ],
                                                   ),
+
+                                                  actionsAlignment: MainAxisAlignment.spaceBetween,
+
+                                                  actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+
                                                   actions: [
-                                                    TextButton(
+                                                    // Close Button
+                                                    OutlinedButton(
+                                                      style: OutlinedButton.styleFrom(
+                                                        minimumSize: const Size(120, 44),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                      ),
+
                                                       onPressed: () {
                                                         Navigator.pop(context);
                                                       },
-                                                      child: const Text("Close"),
+
+                                                      child: const Text('Close'),
                                                     ),
-                                                    TextButton(
+
+                                                    // Complete Button
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.green,
+                                                        foregroundColor: Colors.white,
+                                                        minimumSize: const Size(120, 44),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        elevation: 2,
+                                                      ),
+
                                                       onPressed: () {
                                                         task.isCompleted = true;
                                                         task.save();
                                                         Navigator.pop(context);
                                                       },
-                                                      child: const Text("Mark Completed"),
+
+                                                      child: const Text('Mark Done'),
                                                     ),
                                                   ],
                                                 ),

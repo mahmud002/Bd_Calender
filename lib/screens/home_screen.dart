@@ -807,242 +807,251 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        child: InkWell(
+                          onTap: (){
+                            // ✅ Single tap → Navigate to TaskPage
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => TaskPage()),
+                            );
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
 
-                            // Header
-                            Text(
-                              "Today's Tasks",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Stats row
-                            Row(
-                              children: [
-                                Text(" Completed: ${stats['completed']}", style: TextStyle(fontSize: 14, color: Colors.green)),
-                                const SizedBox(width: 16),
-                                Text(" Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14, color: Colors.blue)),
-                                const SizedBox(width: 16),
-                                Text(" Missed: ${stats['missed']}", style: TextStyle(fontSize: 14, color: Colors.deepOrange)),
-                              ],
-                            ),
-
-                            // Space before due today
-                            if (todayUpcoming.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-
-                              // Modern card for Due Today tasks
-                              Card(
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              // Header
+                              Text(
+                                "Today's Tasks",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Task list
-                                      ...todayUpcoming.map((task) {
-                                        final timeLeft = getTimeLeft(task);
-                                        final taskTimeStr = formatTaskTime(task);
+                              ),
+                              const SizedBox(height: 8),
 
-                                        final isUrgent = timeLeft.contains('m left') &&
-                                            int.tryParse(timeLeft.split('m').first) != null &&
-                                            int.parse(timeLeft.split('m').first) <= 60;
+                              // Stats row
+                              Row(
+                                children: [
+                                  Text(" Completed: ${stats['completed']}", style: TextStyle(fontSize: 14, color: Colors.green)),
+                                  const SizedBox(width: 16),
+                                  Text(" Remaining: ${stats['remaining']}", style: TextStyle(fontSize: 14, color: Colors.blue)),
+                                  const SizedBox(width: 16),
+                                  Text(" Missed: ${stats['missed']}", style: TextStyle(fontSize: 14, color: Colors.deepOrange)),
+                                ],
+                              ),
 
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 6),
-                                          child: InkWell(
-                                            borderRadius: BorderRadius.circular(8),
-                                            onTap: () {
-                                              // ✅ Single tap → Navigate to TaskPage
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(builder: (_) => TaskPage()),
-                                              );
-                                            },
-                                            onLongPress: () {
-                                              // ✅ Long press → Mark complete dialog
-                                              showDialog(
-                                                context: context,
-                                                builder: (_) => AlertDialog(
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(20),
-                                                  ),
+                              // Space before due today
+                              if (todayUpcoming.isNotEmpty) ...[
+                                const SizedBox(height: 16),
 
-                                                  icon: const Icon(
-                                                    Icons.task_alt,
-                                                    size: 48,
-                                                    color: Colors.green,
-                                                  ),
+                                // Modern card for Due Today tasks
+                                Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Task list
+                                        ...todayUpcoming.map((task) {
+                                          final timeLeft = getTimeLeft(task);
+                                          final taskTimeStr = formatTaskTime(task);
 
-                                                  title: Text(
-                                                    task.title,
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.w600,
+                                          final isUrgent = timeLeft.contains('m left') &&
+                                              int.tryParse(timeLeft.split('m').first) != null &&
+                                              int.parse(timeLeft.split('m').first) <= 60;
+
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 6),
+                                            child: InkWell(
+                                              borderRadius: BorderRadius.circular(8),
+                                              onTap: () {
+                                                // ✅ Single tap → Navigate to TaskPage
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(builder: (_) => TaskPage()),
+                                                );
+                                              },
+                                              onLongPress: () {
+                                                // ✅ Long press → Mark complete dialog
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => AlertDialog(
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(20),
                                                     ),
-                                                  ),
 
-                                                  content: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    icon: const Icon(
+                                                      Icons.task_alt,
+                                                      size: 48,
+                                                      color: Colors.green,
+                                                    ),
 
-                                                    children: [
-                                                      const SizedBox(height: 8),
-
-                                                      // Time
-                                                      Row(
-                                                        children: [
-                                                          const Icon(Icons.access_time, size: 18),
-                                                          const SizedBox(width: 8),
-                                                          Expanded(
-                                                            child: Text(
-                                                              "Time: $taskTimeStr",
-                                                              style: const TextStyle(fontSize: 14),
-                                                            ),
-                                                          ),
-                                                        ],
+                                                    title: Text(
+                                                      task.title,
+                                                      textAlign: TextAlign.center,
+                                                      style: const TextStyle(
+                                                        fontWeight: FontWeight.w600,
                                                       ),
+                                                    ),
 
-                                                      const SizedBox(height: 8),
+                                                    content: Column(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
 
-                                                      // Note
-                                                      Row(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          const Icon(Icons.note, size: 18),
-                                                          const SizedBox(width: 8),
-                                                          Expanded(
-                                                            child: Text(
-                                                              "Note: ${task.note?.isNotEmpty == true ? task.note : "No note"}",
-                                                              style: const TextStyle(fontSize: 14),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
+                                                      children: [
+                                                        const SizedBox(height: 8),
 
-                                                      const SizedBox(height: 8),
-
-                                                      // Remaining Time
-                                                      Row(
-                                                        children: [
-                                                          const Icon(Icons.timer, size: 18),
-                                                          const SizedBox(width: 8),
-                                                          Expanded(
-                                                            child: Text(
-                                                              "Remaining: $timeLeft",
-                                                              style: const TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight: FontWeight.w500,
+                                                        // Time
+                                                        Row(
+                                                          children: [
+                                                            const Icon(Icons.access_time, size: 18),
+                                                            const SizedBox(width: 8),
+                                                            Expanded(
+                                                              child: Text(
+                                                                "Time: $taskTimeStr",
+                                                                style: const TextStyle(fontSize: 14),
                                                               ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-
-                                                  actionsAlignment: MainAxisAlignment.spaceBetween,
-
-                                                  actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-
-                                                  actions: [
-                                                    // Close Button
-                                                    OutlinedButton(
-                                                      style: OutlinedButton.styleFrom(
-                                                        minimumSize: const Size(120, 44),
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius: BorderRadius.circular(12),
+                                                          ],
                                                         ),
-                                                      ),
 
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                      },
+                                                        const SizedBox(height: 8),
 
-                                                      child: const Text('Close'),
-                                                    ),
-
-                                                    // Complete Button
-                                                    ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.green,
-                                                        foregroundColor: Colors.white,
-                                                        minimumSize: const Size(120, 44),
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius: BorderRadius.circular(12),
+                                                        // Note
+                                                        Row(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            const Icon(Icons.note, size: 18),
+                                                            const SizedBox(width: 8),
+                                                            Expanded(
+                                                              child: Text(
+                                                                "Note: ${task.note?.isNotEmpty == true ? task.note : "No note"}",
+                                                                style: const TextStyle(fontSize: 14),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
-                                                        elevation: 2,
-                                                      ),
 
-                                                      onPressed: () {
-                                                        task.isCompleted = true;
-                                                        task.save();
-                                                        Navigator.pop(context);
-                                                      },
+                                                        const SizedBox(height: 8),
 
-                                                      child: const Text('Mark Done'),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  const Icon(Icons.arrow_right_rounded, size: 20),
-                                                  const SizedBox(width: 6),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(
-                                                          task.title,
-                                                          style: const TextStyle(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 15,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(height: 2),
-                                                        Text(
-                                                          "$taskTimeStr • $timeLeft",
-                                                          style: TextStyle(
-                                                            fontSize: 13,
-                                                            color: isUrgent
-                                                                ? Colors.red
-                                                                : Theme.of(context).textTheme.bodySmall?.color,
-
-                                                            fontStyle: FontStyle.italic,
-                                                          ),
+                                                        // Remaining Time
+                                                        Row(
+                                                          children: [
+                                                            const Icon(Icons.timer, size: 18),
+                                                            const SizedBox(width: 8),
+                                                            Expanded(
+                                                              child: Text(
+                                                                "Remaining: $timeLeft",
+                                                                style: const TextStyle(
+                                                                  fontSize: 14,
+                                                                  fontWeight: FontWeight.w500,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
                                                       ],
                                                     ),
+
+                                                    actionsAlignment: MainAxisAlignment.spaceBetween,
+
+                                                    actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+
+                                                    actions: [
+                                                      // Close Button
+                                                      OutlinedButton(
+                                                        style: OutlinedButton.styleFrom(
+                                                          minimumSize: const Size(120, 44),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(12),
+                                                          ),
+                                                        ),
+
+                                                        onPressed: () {
+                                                          Navigator.pop(context);
+                                                        },
+
+                                                        child: const Text('Close'),
+                                                      ),
+
+                                                      // Complete Button
+                                                      ElevatedButton(
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.green,
+                                                          foregroundColor: Colors.white,
+                                                          minimumSize: const Size(120, 44),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(12),
+                                                          ),
+                                                          elevation: 2,
+                                                        ),
+
+                                                        onPressed: () {
+                                                          task.isCompleted = true;
+                                                          task.save();
+                                                          Navigator.pop(context);
+                                                        },
+
+                                                        child: const Text('Mark Done'),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ],
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.arrow_right_rounded, size: 20),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            task.title,
+                                                            style: const TextStyle(
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: 15,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 2),
+                                                          Text(
+                                                            "$taskTimeStr • $timeLeft",
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              color: isUrgent
+                                                                  ? Colors.red
+                                                                  : Theme.of(context).textTheme.bodySmall?.color,
+
+                                                              fontStyle: FontStyle.italic,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ],
+                                          );
+                                        }).toList(),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
 
-                          ],
-                        ),
+                            ],
+                          ),
+                        )
                       ),
                     );
 

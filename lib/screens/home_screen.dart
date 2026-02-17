@@ -1,3 +1,5 @@
+import '../services/ramadan_service.dart';
+import 'ramadan_page.dart';
 import 'package:hive/hive.dart';
 
 import '../model/task_model.dart';
@@ -499,6 +501,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       0,
     ).day;
 
+    final today = RamadanService.getToday();
+    final adjustment = RamadanService.districtAdjustment["Dhaka"] ?? 0;
     return Scaffold(
       drawer: Drawer(
         child: ListView(
@@ -559,6 +563,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => HolidayListPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule), // better for time/schedule
+              title: const Text('Ramadan Times'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RamadanPage(district: 'Dhaka'),
+                  ),
                 );
               },
             ),
@@ -783,6 +800,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 ),
               ),
+
             // ------------------ Today's Tasks (Auto Refresh) -----------------
             SliverToBoxAdapter(
               child: Padding(
@@ -1061,7 +1079,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
 
-// ------------------ Notifications -----------------
+
+            // ------------------ Ramadan Today Card -----------------
+            if (today != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => RamadanPage(district: 'Dhaka',)),
+                      );
+                    },
+                  child: RamadanService.todayCard(today, adjustment),
+                  ),
+
+                ),
+              ),
+            // ------------------ Notifications -----------------
             SliverToBoxAdapter(
               key: const ValueKey("notifications_section"),
               child: Padding(

@@ -28,6 +28,7 @@ Future<void> main() async {
   await Hive.openBox("noticeBox");
   await Hive.openBox<TaskModel>('taskBox');
   await Hive.openBox<RepeatedReminderModel>('repeatedReminderBox');
+  await Hive.openBox('settings');
 
   // Load saved theme
   final prefs = await SharedPreferences.getInstance();
